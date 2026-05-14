@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blog Verse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+
+    <h2>Blog Verse</h2>
+
+    <div class="nav-right">
+        <h3>Welcome, {{ username }}</h3>
+        <a href="/create">Upload New Post</a>
+    </div>
+
+</div>
+
+<div class="feed-container">
+ 
+    <div class="feed-container">
+
+{% for post in posts %}
+
+{% set post_id = loop.index0 %}
+
+<div class="post-card">
+
+    {% if post.type == 'image' %}
+
+    <img src="{{ url_for('static', filename='images/' + post.filename) }}" class="post-image">
+
+    {% else %}
+
+    <div class="file-box">
+        <h3>📁 File Uploaded</h3>
+
+        <a href="{{ url_for('static', filename='files/' + post.filename) }}" download>
+            Download File
+        </a>
+    </div>
+
+    {% endif %}
+
+    <div class="post-content">
+
+        <h2>{{ post.title }}</h2>
+
+        <p>{{ post.content }}</p>
+
+        <div class="action-bar">
+
+            <a href="/like/{{ post_id }}">
+                ❤️ Like ({{ post.likes }})
+            </a>
+
+            <button onclick="sharePost()">
+                📤 Share
+            </button>
+
+            <a href="/delete/{{ post_id }}">
+                🗑️ Delete
+            </a>
+
+        </div>
+
+        <div class="comment-section">
+
+            <h4>Comments</h4>
+
+            {% for comment in post.comments %}
+
+            <div class="comment-box">
+
+                <p class="comment">
+                    💬 {{ comment }}
+                </p>
+
+                <a href="/delete_comment/{{ post_id }}/{{ loop.index0 }}">
+                    ❌
+                </a>
+
+            </div>
+
+            {% endfor %}
+
+            <form action="/comment/{{ post_id }}" method="POST">
+
+                <input
+                type="text"
+                name="comment"
+                placeholder="Write comment..."
+                required>
+
+                <button type="submit">
+                    Comment
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<a href="/logout">Logout</a>
+
+<script>
+function sharePost(){
+    alert("Post Shared Successfully!")
+}
+</script>
+</body>
+</html>

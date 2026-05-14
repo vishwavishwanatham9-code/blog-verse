@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Post</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="create-body">
+
+<div class="create-box">
+
+<h1>Upload New Post</h1>
+
+<form method="POST" enctype="multipart/form-data">
+
+<input
+type="text"
+name="title"
+placeholder="Post Title"
+required>
+
+<textarea
+name="content"
+placeholder="Write your thoughts..."
+required></textarea>
+
+<input type="file" name="image" accept=".png,.jpg,.jpeg,.gif,.pdf,.doc,.docx,.txt" required>
+
+<button type="submit">
+Publish Post
+</button>
+
+</form>
+
+</div>
+
+</body>
+</html>
