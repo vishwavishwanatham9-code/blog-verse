@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Blog Verse</title>
+    <title></title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -12,7 +12,12 @@
 
     <div class="nav-right">
         <h3>Welcome, {{ username }}</h3>
+
         <a href="/create">Upload New Post</a>
+
+        <a href="/logout" class="logout-btn">
+            Logout
+        </a>
     </div>
 
 </div>
@@ -108,8 +113,6 @@
 {% endfor %}
 
 </div>
-
-<a href="/logout">Logout</a>
 
 <script>
 function sharePost(){
