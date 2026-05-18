@@ -4,7 +4,9 @@ import os
 import re
 
 app = Flask(__name__)
-
+# ADMIN SETTINGS
+ADMIN_EMAIL = "admin@gmail.com"
+ADMIN_DELETE_PASSWORD = "admin123"
 app.secret_key = "blogverse"
 ADMIN_PASSWORD = "admin123"
 
@@ -133,16 +135,41 @@ def comment(id):
     return redirect('/home')
     
     # DELETE COMMENT
-@app.route('/delete_comment/<int:post_id>/<int:comment_id>')
+@app.route('/delete_comment/<int:post_id>/<int:comment_id>', methods=['GET', 'POST'])
 def delete_comment(post_id, comment_id):
 
-    if post_id < len(posts):
+    if 'username' not in session:
+        return redirect('/')
 
-        if comment_id < len(posts[post_id]['comments']):
+    username = session['username']
 
-            posts[post_id]['comments'].pop(comment_id)
+    # Only admin can delete comments
+    if username != ADMIN_EMAIL:
+        return "Only Admin Can Delete Comments"
 
-    return redirect('/home')
+    if request.method == 'POST':
+
+        password = request.form['password']
+
+        # Check admin password
+        if password == ADMIN_DELETE_PASSWORD:
+
+            if post_id < len(posts):
+
+                if comment_id < len(posts[post_id]['comments']):
+
+                    posts[post_id]['comments'].pop(comment_id)
+
+            return redirect('/home')
+
+        else:
+            return "Wrong Admin Password"
+
+    return render_template(
+        'delete_comment.html',
+        post_id=post_id,
+        comment_id=comment_id
+    )
 # # ADMIN PASSWORD
 ADMIN_PASSWORD = "navya123"
 
