@@ -2,32 +2,18 @@
 <html>
 <head>
     <title>Delete Post</title>
-
-<link rel="stylesheet"
-href="{{ url_for('static', filename='style.css') }}">
-
 </head>
-<body class="create-body">
+<body>
 
-<div class="create-box">
+    <h2>Admin Verification</h2>
 
-<h2>Enter Password</h2>
+    <form method="POST">
 
-<form method="POST">
+        <input type="password" name="password" placeholder="Enter Admin Password" required>
 
-<input
-type="password"
-name="password"
-placeholder="Enter Password"
-required>
+        <button type="submit">Delete Post</button>
 
-<button type="submit">
-Delete Post
-</button>
-
-</form>
-
-</div>
+    </form>
 
 </body>
 </html>

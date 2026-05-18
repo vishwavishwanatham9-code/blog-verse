@@ -6,6 +6,7 @@ import re
 app = Flask(__name__)
 
 app.secret_key = "blogverse"
+ADMIN_PASSWORD = "admin123"
 
 UPLOAD_FOLDER = 'static/images'
 
@@ -142,18 +143,23 @@ def delete_comment(post_id, comment_id):
             posts[post_id]['comments'].pop(comment_id)
 
     return redirect('/home')
-# DELETE
-# DELETE POST WITH PASSWORD
+# # ADMIN PASSWORD
+ADMIN_PASSWORD = "navya123"
+
+# DELETE POST WITH ADMIN AUTHORITY
 @app.route('/delete/<int:id>', methods=['GET', 'POST'])
 def delete(id):
 
+    # Check login
+    if 'username' not in session:
+        return redirect('/')
+
     if request.method == 'POST':
 
-        password = request.form['password']
+        admin_password = request.form['password']
 
-        username = session['username']
-
-        if users[username] == password:
+        # Only admin password can delete
+        if admin_password == ADMIN_PASSWORD:
 
             if id < len(posts):
                 posts.pop(id)
@@ -161,10 +167,9 @@ def delete(id):
             return redirect('/home')
 
         else:
-            return "Wrong Password"
+            return "Only Admin Can Delete Posts"
 
     return render_template('delete.html', id=id)
-
 # LOGOUT
 @app.route('/logout')
 def logout():
@@ -172,6 +177,7 @@ def logout():
     session.pop('username', None)
 
     return redirect('/')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
