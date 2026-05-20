@@ -34,7 +34,7 @@
 
     {% if post.type == 'image' %}
 
-    <img src="{{ url_for('static', filename='images/' + post.filename) }}" class="post-image">
+    <img src="{{ post.filename }}" class="post-image">
 
     {% else %}
 

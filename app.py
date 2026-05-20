@@ -1,9 +1,16 @@
 from flask import Flask, render_template, request, redirect, session
+import cloudinary
+import cloudinary.uploader
 from werkzeug.utils import secure_filename
 import os
 import re
 
 app = Flask(__name__)
+cloudinary.config(
+    cloud_name="dytdch3w5",
+    api_key="754274292374841",
+    api_secret="pl9tcSg-eC_Uahnv-yXe1ut1qa0"
+)
 # ADMIN SETTINGS
 ADMIN_EMAIL = "admin@gmail.com"
 ADMIN_DELETE_PASSWORD = "admin123"
@@ -93,20 +100,28 @@ def create():
 
         image_extensions = ['png', 'jpg', 'jpeg', 'gif']
 
-        # Save Images
+        # Upload Images to Cloudinary
         if extension in image_extensions:
-            file.save(os.path.join('static/images', filename))
+
+            result = cloudinary.uploader.upload(file)
+
+            file_url = result['secure_url']
+
             file_type = 'image'
 
-        # Save Other Files
+        # Save Other Files Normally
         else:
+
             file.save(os.path.join('static/files', filename))
+
+            file_url = filename
+
             file_type = 'file'
 
         posts.append({
             'title': title,
             'content': content,
-            'filename': filename,
+            'filename': file_url,
             'type': file_type,
             'likes': 0,
             'comments': []
