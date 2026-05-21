@@ -1,65 +1,36 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, session
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
-from werkzeug.utils import secure_filename
 import os
 import re
 
 app = Flask(__name__)
 
+# =========================
+# SECRET KEY
+# =========================
+
+app.secret_key = "your_secret_key"
+
+# =========================
+# DATABASE
+# =========================
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blogverse.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-# =========================
-# DATABASE MODELS
-# =========================
-
-class User(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    email = db.Column(db.String(100), unique=True)
-
-    password = db.Column(db.String(100))
-
-
-class Post(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    title = db.Column(db.String(200))
-
-    content = db.Column(db.Text)
-
-    filename = db.Column(db.String(500))
-
-    type = db.Column(db.String(20))
-
-    likes = db.Column(db.Integer, default=0)
-
-
-class Comment(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    text = db.Column(db.String(500))
-
-    post_id = db.Column(
-        db.Integer,
-        db.ForeignKey('post.id')
-    )
 
 # =========================
 # CLOUDINARY CONFIG
 # =========================
 
 cloudinary.config(
-    cloud_name="dytdch3w5",
-    api_key="754274292374841",
-    api_secret="pl9tcSg-eC_Uahnv-yXe1ut1qa0"
+    cloud_name="YOUR_CLOUD_NAME",
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET"
 )
 
 # =========================
@@ -67,51 +38,47 @@ cloudinary.config(
 # =========================
 
 ADMIN_EMAIL = "admin@gmail.com"
-
 ADMIN_DELETE_PASSWORD = "admin123"
 
-app.secret_key = "blogverse"
-
 # =========================
-# UPLOAD FOLDER
+# DATABASE MODELS
 # =========================
 
-UPLOAD_FOLDER = 'static/images'
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    image = db.Column(db.String(500))
+    author = db.Column(db.String(100))
 
-os.makedirs('static/files', exist_ok=True)
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text)
+    username = db.Column(db.String(100))
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
 
 # =========================
-# LOGIN
+# CREATE DATABASE
 # =========================
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
+with app.app_context():
+    db.create_all()
 
-    if request.method == 'POST':
+# =========================
+# HOME PAGE
+# =========================
 
-        username = request.form['username']
-
-        password = request.form['password']
-
-        user = User.query.filter_by(
-            email=username,
-            password=password
-        ).first()
-
-        if user:
-
-            session['username'] = username
-
-            return redirect('/home')
-
-        else:
-            return "Invalid Username or Password"
-
-    return render_template('login.html')
+@app.route('/')
+def home():
+    posts = Post.query.order_by(Post.id.desc()).all()
+    return render_template('home.html', posts=posts)
 
 # =========================
 # REGISTER
@@ -123,48 +90,58 @@ def register():
     if request.method == 'POST':
 
         username = request.form['username']
-
         password = request.form['password']
 
-        email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-
-        if not re.match(email_pattern, username):
-            return "Invalid Email Address"
-
-        existing_user = User.query.filter_by(email=username).first()
+        existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
-            return "Email Already Registered"
+            return "Username already exists"
 
         new_user = User(
-            email=username,
+            username=username,
             password=password
         )
 
         db.session.add(new_user)
-
         db.session.commit()
 
-        return redirect('/')
+        return redirect('/login')
 
     return render_template('register.html')
 
 # =========================
-# HOME
+# LOGIN
 # =========================
 
-@app.route('/home')
-def home():
+@app.route('/login', methods=['GET', 'POST'])
+def login():
 
-    if 'username' not in session:
-        return redirect('/')
+    if request.method == 'POST':
 
-    return render_template(
-        'home.html',
-        posts=Post.query.all(),
-        username=session['username'],
-        Comment=Comment
-    )
+        username = request.form['username']
+        password = request.form['password']
+
+        user = User.query.filter_by(
+            username=username,
+            password=password
+        ).first()
+
+        if user:
+            session['username'] = username
+            return redirect('/')
+
+        return "Invalid username or password"
+
+    return render_template('login.html')
+
+# =========================
+# LOGOUT
+# =========================
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect('/')
 
 # =========================
 # CREATE POST
@@ -174,184 +151,161 @@ def home():
 def create():
 
     if 'username' not in session:
-        return redirect('/')
+        return redirect('/login')
 
     if request.method == 'POST':
 
         title = request.form['title']
-
         content = request.form['content']
 
-        file = request.files['image']
+        image_file = request.files['image']
 
-        filename = secure_filename(file.filename)
+        image_url = ""
 
-        extension = filename.split('.')[-1].lower()
+        if image_file and image_file.filename != "":
 
-        image_extensions = ['png', 'jpg', 'jpeg', 'gif']
+            filename = secure_filename(image_file.filename)
 
-        if extension in image_extensions:
+            upload_result = cloudinary.uploader.upload(image_file)
 
-            result = cloudinary.uploader.upload(file)
-
-            file_url = result['secure_url']
-
-            file_type = 'image'
-
-        else:
-
-            file.save(os.path.join('static/files', filename))
-
-            file_url = filename
-
-            file_type = 'file'
+            image_url = upload_result['secure_url']
 
         new_post = Post(
             title=title,
             content=content,
-            filename=file_url,
-            type=file_type
+            image=image_url,
+            author=session['username']
         )
 
         db.session.add(new_post)
-
         db.session.commit()
 
-        return redirect('/home')
+        return redirect('/')
 
     return render_template('create.html')
 
 # =========================
-# LIKE POST
+# VIEW POST
 # =========================
 
-@app.route('/like/<int:id>')
-def like(id):
+@app.route('/post/<int:post_id>')
+def post(post_id):
 
-    post = Post.query.get(id)
+    single_post = Post.query.get_or_404(post_id)
 
-    if post:
+    comments = Comment.query.filter_by(post_id=post_id).all()
 
-        post.likes += 1
-
-        db.session.commit()
-
-    return redirect('/home')
+    return render_template(
+        'post.html',
+        post=single_post,
+        comments=comments
+    )
 
 # =========================
-# COMMENT
+# ADD COMMENT
 # =========================
 
-@app.route('/comment/<int:id>', methods=['POST'])
-def comment(id):
-
-    text = request.form['comment']
-
-    if text:
-
-        new_comment = Comment(
-            text=text,
-            post_id=id
-        )
-
-        db.session.add(new_comment)
-
-        db.session.commit()
-
-    return redirect('/home')
-# DELETE COMMENT
-# DELETE COMMENT
-@app.route('/delete_comment/<int:post_id>/<int:comment_id>', methods=['GET', 'POST'])
-def delete_comment(post_id, comment_id):
+@app.route('/comment/<int:post_id>', methods=['POST'])
+def comment(post_id):
 
     if 'username' not in session:
-        return redirect('/')
+        return redirect('/login')
+
+    content = request.form['content']
+
+    new_comment = Comment(
+        content=content,
+        username=session['username'],
+        post_id=post_id
+    )
+
+    db.session.add(new_comment)
+    db.session.commit()
+
+    return redirect(f'/post/{post_id}')
+
+# =========================
+# DELETE POST
+# =========================
+
+@app.route('/delete/<int:post_id>', methods=['GET', 'POST'])
+def delete(post_id):
+
+    if 'username' not in session:
+        return redirect('/login')
 
     username = session['username']
 
-    # ONLY ADMIN CAN DELETE COMMENTS
-    if username != "admin@gmail.com":
-        return "Only Admin Can Delete Comments"
+    if username != ADMIN_EMAIL:
+        return "Only Admin Can Delete Posts"
+
+    post = Post.query.get_or_404(post_id)
 
     if request.method == 'POST':
 
         password = request.form['password']
 
-        # CHECK ADMIN PASSWORD
-        if password == "admin123":
+        if password == ADMIN_DELETE_PASSWORD:
 
-            comment = Comment.query.get(comment_id)
+            comments = Comment.query.filter_by(post_id=post_id).all()
 
-            if comment:
+            for comment in comments:
                 db.session.delete(comment)
-                db.session.commit()
 
-            return redirect('/home')
+            db.session.delete(post)
+            db.session.commit()
+
+            return redirect('/')
+
+        else:
+            return "Wrong Admin Password"
+
+    return render_template(
+        'delete_post.html',
+        post=post
+    )
+
+# =========================
+# DELETE COMMENT
+# =========================
+
+@app.route('/delete_comment/<int:post_id>/<int:comment_id>', methods=['GET', 'POST'])
+def delete_comment(post_id, comment_id):
+
+    if 'username' not in session:
+        return redirect('/login')
+
+    username = session['username']
+
+    if username != ADMIN_EMAIL:
+        return "Only Admin Can Delete Comments"
+
+    comment = Comment.query.get_or_404(comment_id)
+
+    if request.method == 'POST':
+
+        password = request.form['password']
+
+        if password == ADMIN_DELETE_PASSWORD:
+
+            db.session.delete(comment)
+            db.session.commit()
+
+            return redirect(f'/post/{post_id}')
 
         else:
             return "Wrong Admin Password"
 
     return render_template(
         'delete_comment.html',
-        post_id=post_id,
-        comment_id=comment_id
+        comment=comment,
+        post_id=post_id
     )
-    # =========================
+
 # =========================
-# DELETE POST
+# RUN APP
 # =========================
 
-@app.route('/delete/<int:id>', methods=['GET', 'POST'])
-def delete_post(id):
-
-    # CHECK LOGIN
-    if 'username' not in session:
-        return redirect('/')
-
-    username = session['username']
-
-    # ONLY ADMIN CAN DELETE POSTS
-    if username != ADMIN_EMAIL:
-        return "Only Admin Can Delete Posts"
-
-    # GET POST
-    post = Post.query.get(id)
-
-    if not post:
-        return "Post Not Found"
-
-    # WHEN PASSWORD SUBMITTED
-    if request.method == 'POST':
-
-        password = request.form['password']
-
-        # CHECK ADMIN PASSWORD
-        if password == ADMIN_DELETE_PASSWORD:
-
-            # DELETE ALL COMMENTS OF POST
-            comments = Comment.query.filter_by(post_id=id).all()
-
-            for comment in comments:
-                db.session.delete(comment)
-
-            # DELETE POST
-            db.session.delete(post)
-
-            db.session.commit()
-
-            return redirect('/home')
-
-        else:
-            return "Wrong Admin Password"
-
-    # OPEN DELETE PAGE
-    return render_template(
-        'delete_post.html',
-        post_id=id
-    )
 if __name__ == "__main__":
-
-      with app.app_context():
-        db.create_all()
-
-app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
