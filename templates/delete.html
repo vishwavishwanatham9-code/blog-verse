@@ -2,18 +2,84 @@
 <html>
 <head>
     <title>Delete Post</title>
+
+    <style>
+
+        body{
+            margin:0;
+            padding:0;
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background:#f4f4f4;
+            font-family:Arial, sans-serif;
+        }
+
+        .delete-container{
+            background:white;
+            padding:40px;
+            width:350px;
+            border-radius:15px;
+            box-shadow:0 0 15px rgba(0,0,0,0.2);
+            text-align:center;
+        }
+
+        .delete-container h2{
+            margin-bottom:25px;
+            color:#333;
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            margin-bottom:20px;
+            border:1px solid #ccc;
+            border-radius:8px;
+            font-size:16px;
+            box-sizing:border-box;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            border:none;
+            border-radius:8px;
+            background:#ff4d4d;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+            transition:0.3s;
+        }
+
+        button:hover{
+            background:#e60000;
+        }
+
+    </style>
+
 </head>
+
 <body>
 
-    <h2>Admin Verification</h2>
+    <div class="delete-container">
 
-    <form method="POST">
+        <h2>Delete Post</h2>
 
-        <input type="password" name="password" placeholder="Enter Admin Password" required>
+        <form method="POST">
 
-        <button type="submit">Delete Post</button>
+            <input type="password"
+                   name="password"
+                   placeholder="Enter Admin Password"
+                   required>
 
-    </form>
+            <button type="submit">
+                Delete Post
+            </button>
+
+        </form>
+
+    </div>
 
 </body>
 </html>
