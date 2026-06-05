@@ -64,7 +64,10 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer)
     text = db.Column(db.String(500))
 
-
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100))
+    post_id = db.Column(db.Integer)
 # =========================
 # CREATE DATABASE
 # =========================
@@ -222,20 +225,39 @@ def create():
     return render_template('create.html')
 
 # =========================
-# LIKE
-# =========================
-
-@app.route('/like/<int:post_id>')
+@app.route("/like/<int:post_id>")
 def like(post_id):
+
+    if "username" not in session:
+        return redirect("/login")
+
+    username = session["username"]
+
+    liked = Like.query.filter_by(
+        username=username,
+        post_id=post_id
+    ).first()
 
     post = Post.query.get(post_id)
 
-    if post:
+    if liked:
+        db.session.delete(liked)
+
+        if post.likes > 0:
+            post.likes -= 1
+
+    else:
+        new_like = Like(
+            username=username,
+            post_id=post_id
+        )
+
+        db.session.add(new_like)
         post.likes += 1
-        db.session.commit()
 
-    return redirect('/')
+    db.session.commit()
 
+    return redirect("/")
 # =========================
 # COMMENT
 # =========================
