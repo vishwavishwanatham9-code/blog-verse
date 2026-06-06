@@ -59,9 +59,9 @@
                 ❤️ Like ({{ post.likes }})
             </a>
 
-            <button onclick="sharePost()">
-                📤 Share
-            </button>
+           <button onclick="sharePost({{ post.id }})">
+    📤 Share
+          </button>
 
             <a href="/delete/{{ post.id }}">
            🗑️ Delete
@@ -110,8 +110,28 @@
 </div>
 
 <script>
-function sharePost(){
-    alert("Post Shared Successfully!")
+function sharePost(postId) {
+
+    const postUrl = window.location.origin + "/post/" + postId;
+
+    if (navigator.share) {
+
+        navigator.share({
+            title: "Blog Verse",
+            text: "Check out this post!",
+            url: postUrl
+        }).catch(err => console.log(err));
+
+    } else {
+
+        navigator.clipboard.writeText(postUrl)
+            .then(() => {
+                alert("Link copied successfully!");
+            })
+            .catch(() => {
+                prompt("Copy this link:", postUrl);
+            });
+    }
 }
 </script>
 </body>
