@@ -223,7 +223,18 @@ def create():
             return redirect('/')
 
     return render_template('create.html')
+@app.route('/post/<int:post_id>')
+def post(post_id):
 
+    single_post = Post.query.get_or_404(post_id)
+
+    comments = Comment.query.filter_by(post_id=post_id).all()
+
+    return render_template(
+        'post.html',
+        post=single_post,
+        comments=comments
+    )
 # =========================
 @app.route("/like/<int:post_id>")
 def like(post_id):
